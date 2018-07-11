@@ -307,7 +307,7 @@ export default class Permalink extends PureComponent {
             <Text>
                 <AwesomeIcon
                     name='archive'
-                    style={[style.icon]}
+                    style={[style.archiveIcon]}
                 />
                 {' '}
             </Text>
@@ -506,9 +506,10 @@ const getStyleSheet = makeStyleSheetFromTheme((theme) => {
             color: changeOpacity(theme.centerChannelColor, 0.4),
             fontSize: 15,
         },
-        icon: {
+        archiveIcon: {
             color: theme.centerChannelColor,
             fontSize: 16,
+            paddingRight: 20,
         },
     };
 });
