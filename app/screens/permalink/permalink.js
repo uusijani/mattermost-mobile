@@ -12,6 +12,7 @@ import {
 import {intlShape} from 'react-intl';
 import * as Animatable from 'react-native-animatable';
 import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
+import AwesomeIcon from 'react-native-vector-icons/FontAwesome';
 
 import {General} from 'mattermost-redux/constants';
 import EventEmitter from 'mattermost-redux/utils/event_emitter';
@@ -58,7 +59,7 @@ export default class Permalink extends PureComponent {
             setChannelDisplayName: PropTypes.func.isRequired,
             setChannelLoading: PropTypes.func.isRequired,
         }).isRequired,
-        channelId: PropTypes.string,
+        channel: PropTypes.object,
         channelName: PropTypes.string,
         channelTeamId: PropTypes.string,
         currentTeamId: PropTypes.string.isRequired,
@@ -112,7 +113,7 @@ export default class Permalink extends PureComponent {
     }
 
     componentWillReceiveProps(nextProps) {
-        if (nextProps.channelId === '' && this.mounted) {
+        if (!nextProps.channel && this.mounted) {
             this.handleClose();
         }
 
@@ -177,11 +178,11 @@ export default class Permalink extends PureComponent {
     };
 
     handlePress = () => {
-        const {channelId, channelName} = this.props;
+        const {channel, channelName} = this.props;
 
         if (this.refs.view) {
             this.refs.view.growOut().then(() => {
-                this.jumpToChannel(channelId, channelName);
+                this.jumpToChannel(channel.id, channelName);
             });
         }
     };
@@ -189,7 +190,7 @@ export default class Permalink extends PureComponent {
     jumpToChannel = (channelId, channelDisplayName) => {
         if (channelId) {
             const {actions, channelTeamId, currentTeamId, navigator, onClose, theme} = this.props;
-            const currentChannelId = this.props.channelId;
+            const currentChannelId = this.props.channel.id;
             const {
                 handleSelectChannel,
                 handleTeamChange,
@@ -242,9 +243,9 @@ export default class Permalink extends PureComponent {
 
     loadPosts = async (props) => {
         const {intl} = this.context;
-        const {actions, channelId, currentUserId, focusedPostId, isPermalink, postIds} = props;
+        const {actions, channel, currentUserId, focusedPostId, isPermalink, postIds} = props;
         const {formatMessage} = intl;
-        let focusChannelId = channelId;
+        let focusChannelId = channel.id;
 
         const post = await actions.getPostThread(focusedPostId, false);
         if (this.mounted && post.error && (!postIds || !postIds.length)) {
@@ -266,12 +267,12 @@ export default class Permalink extends PureComponent {
             return;
         }
 
-        if (!channelId) {
+        if (!channel) {
             focusChannelId = post.data.posts[focusedPostId].channel_id;
             if (!this.props.myMembers[focusChannelId]) {
-                const {data: channel} = await actions.getChannel(focusChannelId);
-                if (channel && channel.type === General.OPEN_CHANNEL) {
-                    await actions.joinChannel(currentUserId, channel.team_id, channel.id);
+                const {data: c} = await actions.getChannel(focusChannelId);
+                if (c && c.type === General.OPEN_CHANNEL) {
+                    await actions.joinChannel(currentUserId, c.team_id, c.id);
                 }
             }
         }
@@ -299,6 +300,18 @@ export default class Permalink extends PureComponent {
             this.setState({loading: true, error: null, retry: false});
             this.loadPosts(this.props);
         }
+    };
+
+    archivedIcon = (style) => {
+        return (
+            <Text>
+                <AwesomeIcon
+                    name='archive'
+                    style={[style.icon]}
+                />
+                {' '}
+            </Text>
+        );
     };
 
     render() {
@@ -386,6 +399,7 @@ export default class Permalink extends PureComponent {
                                     numberOfLines={1}
                                     style={style.title}
                                 >
+                                    {this.archivedIcon(style)}
                                     {title}
                                 </Text>
                             </View>
@@ -491,6 +505,10 @@ const getStyleSheet = makeStyleSheetFromTheme((theme) => {
         errorText: {
             color: changeOpacity(theme.centerChannelColor, 0.4),
             fontSize: 15,
+        },
+        icon: {
+            color: theme.centerChannelColor,
+            fontSize: 16,
         },
     };
 });
